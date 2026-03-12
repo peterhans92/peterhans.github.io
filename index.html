@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>训练时间填报 · 杨汛桥/拱宸桥</title>
+    <title>训练时间填报 · 杨汛桥/拱宸桥（自动保存）</title>
     <style>
         * {
             box-sizing: border-box;
@@ -131,6 +131,14 @@
         .btn-success:hover {
             background: #1f7149;
         }
+        .btn-warning {
+            background: #f0b400;
+            color: white;
+            border: none;
+        }
+        .btn-warning:hover {
+            background: #d6a000;
+        }
         .table-wrapper {
             border-radius: 20px;
             border: 1px solid #e9ecf2;
@@ -200,9 +208,18 @@
             align-items: center;
             margin: 25px 0 10px;
             color: #4f6072;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .record-count {
             background: #e9ecf2;
+            padding: 6px 18px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+        }
+        .auto-save-hint {
+            background: #d4e1fa;
+            color: #0a3b76;
             padding: 6px 18px;
             border-radius: 50px;
             font-size: 0.9rem;
@@ -231,8 +248,8 @@
 </head>
 <body>
 <div class="container">
-    <h1>🏋️ 2025-2026 第二学期 · 训练填报</h1>
-    <div class="subtitle">基于杨汛桥 & 拱宸桥校区训练时间表 · 可直接填报/修改，导出Excel报表</div>
+    <h1>🏋️ 2025-2026 第二学期 · 训练填报（自动保存）</h1>
+    <div class="subtitle">基于杨汛桥 & 拱宸桥校区训练时间表 · 数据自动保存在浏览器中，刷新不丢失</div>
 
     <!-- 填报表单 -->
     <div class="form-panel">
@@ -269,12 +286,14 @@
             <button class="btn btn-primary" id="addBtn">➕ 添加训练</button>
             <button class="btn btn-outline" id="clearFormBtn">🔄 清空表单</button>
             <button class="btn btn-success" id="exportExcelBtn">📥 导出 Excel 报表</button>
+            <button class="btn btn-warning" id="resetBtn">↻ 重置为示例数据</button>
         </div>
     </div>
 
     <!-- 数据列表 -->
     <div class="footer-info">
         <span class="record-count" id="recordCount">加载中...</span>
+        <span class="auto-save-hint">💾 数据自动保存</span>
         <span style="font-size:0.85rem;">点击 <span style="background:#ffe3e3; padding:2px 8px; border-radius:20px;">✕</span> 可删除记录</span>
     </div>
     <div class="table-wrapper">
@@ -299,76 +318,102 @@
 
 <script>
 (function() {
-    // ---------- 初始化原始数据 (根据提供的表格手工整理) ----------
+    // ---------- 生成唯一ID ----------
     function createId() {
         return 'rec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
     }
 
-    // 初始数据集：从表格中提取的主要记录 (校区,时间,班级,人数,姓名,地点)
-    const initialRecords = [
+    // ---------- 初始数据 (原始表格整理) ----------
+    const rawInitialRecords = [
         // 杨汛桥
-        { id: createId(), campus: '杨汛桥', time: '周二8.9', className: '跆拳道提高班', count: '待定', teacher: '徐彬', location: '跆拳道馆' },
-        { id: createId(), campus: '杨汛桥', time: '周二10.11', className: '游泳队', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
-        { id: createId(), campus: '杨汛桥', time: '周二10.11', className: '校合唱队', count: '待定', teacher: '方一力', location: '大活10-12' },
-        { id: createId(), campus: '杨汛桥', time: '周二10.11', className: '校戏曲队', count: '待定', teacher: '开红', location: '游泳馆' },
-        { id: createId(), campus: '杨汛桥', time: '周二10.11', className: '武术', count: '23', teacher: '李丹丹', location: '游泳馆形体房' },
-        { id: createId(), campus: '杨汛桥', time: '周二10.11', className: '全民', count: '待定', teacher: '颜飞卫', location: '体形' },
-        { id: createId(), campus: '杨汛桥', time: '周二10.11', className: '排舞', count: '待定', teacher: '颜飞卫', location: '体形' },
-        { id: createId(), campus: '杨汛桥', time: '周一10.11', className: '校舞蹈队', count: '待定', teacher: '谢舒怡', location: '大活10-12' },
-        { id: createId(), campus: '杨汛桥', time: '周一10.11', className: '田径', count: '待定', teacher: '熊善虎', location: '田径场' },
-        { id: createId(), campus: '杨汛桥', time: '周一10.11', className: '全民队', count: '待定', teacher: '颜飞卫', location: '体育馆' },
-        { id: createId(), campus: '杨汛桥', time: '周一10.11', className: '排舞', count: '待定', teacher: '颜飞卫', location: '体育馆' },
-        { id: createId(), campus: '杨汛桥', time: '周四8.9', className: '乒乓球', count: '10', teacher: '王凯', location: '乒乓球馆三楼' },
-        { id: createId(), campus: '杨汛桥', time: '周四8.9', className: '啦啦操', count: '15', teacher: '吴姝娴', location: '形体房' },
-        { id: createId(), campus: '杨汛桥', time: '周四10.11', className: '跆拳道提高班', count: '待定', teacher: '徐彬', location: '跆拳道馆' },
-        { id: createId(), campus: '杨汛桥', time: '周四10.11', className: '校舞蹈队', count: '待定', teacher: '谢舒怡', location: '大活10-12' },
-        { id: createId(), campus: '杨汛桥', time: '周四10.11', className: '游泳队', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
-        { id: createId(), campus: '杨汛桥', time: '周四10.11', className: '校合唱团', count: '待定', teacher: '方一力', location: '杨汛桥礼堂10-12' },
-        { id: createId(), campus: '杨汛桥', time: '周四10.11', className: '拉丁', count: '24', teacher: '吴姝娴', location: '形体房' },
-        { id: createId(), campus: '杨汛桥', time: '周五8.9', className: '啦啦操', count: '24', teacher: '吴姝娴', location: '形体房' },
-        { id: createId(), campus: '杨汛桥', time: '周五10.11', className: '田径', count: '待定', teacher: '熊善虎', location: '田径场' },
-        { id: createId(), campus: '杨汛桥', time: '周五10.11', className: '杨汛桥话剧队', count: '40', teacher: '陈庆芳', location: '大活中心二楼多功能厅' },
-        { id: createId(), campus: '杨汛桥', time: '周五10.11', className: '乒乓球提高班', count: '20', teacher: '王凯', location: '乒乓球馆三楼' },
-        { id: createId(), campus: '杨汛桥', time: '周五10.11', className: '游泳队', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
-        { id: createId(), campus: '杨汛桥', time: '周五10.11', className: '羽毛球', count: '10', teacher: '惠夕蕊', location: '财经' },
+        { campus: '杨汛桥', time: '周二8.9', className: '跆拳道提高班', count: '待定', teacher: '徐彬', location: '跆拳道馆' },
+        { campus: '杨汛桥', time: '周二10.11', className: '游泳队', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
+        { campus: '杨汛桥', time: '周二10.11', className: '校合唱队', count: '待定', teacher: '方一力', location: '大活10-12' },
+        { campus: '杨汛桥', time: '周二10.11', className: '校戏曲队', count: '待定', teacher: '开红', location: '游泳馆' },
+        { campus: '杨汛桥', time: '周二10.11', className: '武术', count: '23', teacher: '李丹丹', location: '游泳馆形体房' },
+        { campus: '杨汛桥', time: '周二10.11', className: '全民', count: '待定', teacher: '颜飞卫', location: '体形' },
+        { campus: '杨汛桥', time: '周二10.11', className: '排舞', count: '待定', teacher: '颜飞卫', location: '体形' },
+        { campus: '杨汛桥', time: '周一10.11', className: '校舞蹈队', count: '待定', teacher: '谢舒怡', location: '大活10-12' },
+        { campus: '杨汛桥', time: '周一10.11', className: '田径', count: '待定', teacher: '熊善虎', location: '田径场' },
+        { campus: '杨汛桥', time: '周一10.11', className: '全民队', count: '待定', teacher: '颜飞卫', location: '体育馆' },
+        { campus: '杨汛桥', time: '周一10.11', className: '排舞', count: '待定', teacher: '颜飞卫', location: '体育馆' },
+        { campus: '杨汛桥', time: '周四8.9', className: '乒乓球', count: '10', teacher: '王凯', location: '乒乓球馆三楼' },
+        { campus: '杨汛桥', time: '周四8.9', className: '啦啦操', count: '15', teacher: '吴姝娴', location: '形体房' },
+        { campus: '杨汛桥', time: '周四10.11', className: '跆拳道提高班', count: '待定', teacher: '徐彬', location: '跆拳道馆' },
+        { campus: '杨汛桥', time: '周四10.11', className: '校舞蹈队', count: '待定', teacher: '谢舒怡', location: '大活10-12' },
+        { campus: '杨汛桥', time: '周四10.11', className: '游泳队', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
+        { campus: '杨汛桥', time: '周四10.11', className: '校合唱团', count: '待定', teacher: '方一力', location: '杨汛桥礼堂10-12' },
+        { campus: '杨汛桥', time: '周四10.11', className: '拉丁', count: '24', teacher: '吴姝娴', location: '形体房' },
+        { campus: '杨汛桥', time: '周五8.9', className: '啦啦操', count: '24', teacher: '吴姝娴', location: '形体房' },
+        { campus: '杨汛桥', time: '周五10.11', className: '田径', count: '待定', teacher: '熊善虎', location: '田径场' },
+        { campus: '杨汛桥', time: '周五10.11', className: '杨汛桥话剧队', count: '40', teacher: '陈庆芳', location: '大活中心二楼多功能厅' },
+        { campus: '杨汛桥', time: '周五10.11', className: '乒乓球提高班', count: '20', teacher: '王凯', location: '乒乓球馆三楼' },
+        { campus: '杨汛桥', time: '周五10.11', className: '游泳队', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
+        { campus: '杨汛桥', time: '周五10.11', className: '羽毛球', count: '10', teacher: '惠夕蕊', location: '财经' },
         // 拱宸桥
-        { id: createId(), campus: '拱宸桥', time: '周一10.11', className: '排球提高班训练', count: '40', teacher: '蔡勇', location: '体育馆' },
-        { id: createId(), campus: '拱宸桥', time: '周一10.11', className: '羽毛球提高班', count: '20', teacher: '惠夕蕊', location: '羽毛馆' },
-        { id: createId(), campus: '拱宸桥', time: '周一10.11', className: '男足提高班', count: '25', teacher: '邢琦', location: '体育场' },
-        { id: createId(), campus: '拱宸桥', time: '周一10.11', className: '网球', count: '15', teacher: '王盛', location: '网球场' },
-        { id: createId(), campus: '拱宸桥', time: '周一10.11', className: '武术', count: '23', teacher: '李丹丹', location: '体育馆102、103' },
-        { id: createId(), campus: '拱宸桥', time: '周二7.8', className: '乒乓球', count: '10', teacher: '王凯', location: '乒乓球馆' },
-        { id: createId(), campus: '拱宸桥', time: '周二10.11', className: '女篮队（仅拱宸桥队员）', count: '10', teacher: '冯英歌', location: '体育馆' },
-        { id: createId(), campus: '拱宸桥', time: '周二10.11', className: '女足提高班', count: '25', teacher: '邢琦', location: '体育场' },
-        { id: createId(), campus: '拱宸桥', time: '周二10.11', className: '朗诵与主持', count: '40', teacher: '钟纯', location: '多媒体教室' },
-        { id: createId(), campus: '拱宸桥', time: '周二10.11', className: '杭州话剧队', count: '40', teacher: '陈庆芳', location: '杭州树人礼堂' },
-        { id: createId(), campus: '拱宸桥', time: '周三10.11', className: '羽毛球', count: '待定', teacher: '惠夕蕊', location: '羽毛馆' },
-        { id: createId(), campus: '拱宸桥', time: '周三10.11', className: '游泳提高', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
-        { id: createId(), campus: '拱宸桥', time: '周三10.11', className: '篮球提高班', count: '24', teacher: '石一童', location: '篮球馆' },
-        { id: createId(), campus: '拱宸桥', time: '周三10.11', className: '定向', count: '20', teacher: '徐虹', location: '校园' },
-        { id: createId(), campus: '拱宸桥', time: '周三10.11', className: '街舞', count: '24', teacher: '吴姝娴', location: '形体房' },
-        { id: createId(), campus: '拱宸桥', time: '周三10.11', className: '全民', count: '20', teacher: '颜飞卫', location: '体形' },
-        { id: createId(), campus: '拱宸桥', time: '周三10.11', className: '排舞', count: '待定', teacher: '颜飞卫', location: '体形' },
-        { id: createId(), campus: '拱宸桥', time: '周三10.11', className: '校舞蹈队', count: '待定', teacher: '谢舒怡', location: '大活7-9' },
-        { id: createId(), campus: '拱宸桥', time: '周四10.11', className: '女篮队（两校区合练）', count: '18', teacher: '冯英歌', location: '体育馆' },
-        { id: createId(), campus: '拱宸桥', time: '周四10.11', className: '田径', count: '待定', teacher: '熊善虎', location: '田径场' },
-        { id: createId(), campus: '拱宸桥', time: '周四10.11', className: '定向提高班', count: '25', teacher: '徐虹', location: '校园' },
-        { id: createId(), campus: '拱宸桥', time: '周四10.11', className: '武术', count: '20', teacher: '李丹丹', location: '体育馆103' },
-        { id: createId(), campus: '拱宸桥', time: '周四10.11', className: '排球提高班训练', count: '40', teacher: '蔡勇', location: '体育馆' },
-        { id: createId(), campus: '拱宸桥', time: '周六7.8', className: '网球', count: '15', teacher: '王盛', location: '网球场' },
-        { id: createId(), campus: '拱宸桥', time: '周六全天', className: '定向', count: '20', teacher: '徐虹', location: '杭州及周边野外和公园' },
-        { id: createId(), campus: '拱宸桥', time: '周六10.11', className: '游泳队', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
-        { id: createId(), campus: '拱宸桥', time: '周日8.9', className: '跆拳道提高班', count: '待定', teacher: '徐彬', location: '商职' },
-        { id: createId(), campus: '拱宸桥', time: '周日7.8', className: '女篮队（两校区合练）', count: '18', teacher: '冯英歌', location: '体育馆' },
-        { id: createId(), campus: '拱宸桥', time: '周日8.9', className: '男女足', count: '50', teacher: '邢琦', location: '体育场' },
-        { id: createId(), campus: '拱宸桥', time: '周日10.11', className: '男篮', count: '待定', teacher: '石一童', location: '体育馆' },
-        { id: createId(), campus: '拱宸桥', time: '周日10.11', className: '校话剧队', count: '35', teacher: '陈庆芳', location: '杭州树人礼堂' },
-        { id: createId(), campus: '拱宸桥', time: '周日10.11', className: '游泳队', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
-        { id: createId(), campus: '拱宸桥', time: '周日10.11', className: '健美操', count: '24', teacher: '吴姝娴', location: '形体房' }
-    ];
+        { campus: '拱宸桥', time: '周一10.11', className: '排球提高班训练', count: '40', teacher: '蔡勇', location: '体育馆' },
+        { campus: '拱宸桥', time: '周一10.11', className: '羽毛球提高班', count: '20', teacher: '惠夕蕊', location: '羽毛馆' },
+        { campus: '拱宸桥', time: '周一10.11', className: '男足提高班', count: '25', teacher: '邢琦', location: '体育场' },
+        { campus: '拱宸桥', time: '周一10.11', className: '网球', count: '15', teacher: '王盛', location: '网球场' },
+        { campus: '拱宸桥', time: '周一10.11', className: '武术', count: '23', teacher: '李丹丹', location: '体育馆102、103' },
+        { campus: '拱宸桥', time: '周二7.8', className: '乒乓球', count: '10', teacher: '王凯', location: '乒乓球馆' },
+        { campus: '拱宸桥', time: '周二10.11', className: '女篮队（仅拱宸桥队员）', count: '10', teacher: '冯英歌', location: '体育馆' },
+        { campus: '拱宸桥', time: '周二10.11', className: '女足提高班', count: '25', teacher: '邢琦', location: '体育场' },
+        { campus: '拱宸桥', time: '周二10.11', className: '朗诵与主持', count: '40', teacher: '钟纯', location: '多媒体教室' },
+        { campus: '拱宸桥', time: '周二10.11', className: '杭州话剧队', count: '40', teacher: '陈庆芳', location: '杭州树人礼堂' },
+        { campus: '拱宸桥', time: '周三10.11', className: '羽毛球', count: '待定', teacher: '惠夕蕊', location: '羽毛馆' },
+        { campus: '拱宸桥', time: '周三10.11', className: '游泳提高', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
+        { campus: '拱宸桥', time: '周三10.11', className: '篮球提高班', count: '24', teacher: '石一童', location: '篮球馆' },
+        { campus: '拱宸桥', time: '周三10.11', className: '定向', count: '20', teacher: '徐虹', location: '校园' },
+        { campus: '拱宸桥', time: '周三10.11', className: '街舞', count: '24', teacher: '吴姝娴', location: '形体房' },
+        { campus: '拱宸桥', time: '周三10.11', className: '全民', count: '20', teacher: '颜飞卫', location: '体形' },
+        { campus: '拱宸桥', time: '周三10.11', className: '排舞', count: '待定', teacher: '颜飞卫', location: '体形' },
+        { campus: '拱宸桥', time: '周三10.11', className: '校舞蹈队', count: '待定', teacher: '谢舒怡', location: '大活7-9' },
+        { campus: '拱宸桥', time: '周四10.11', className: '女篮队（两校区合练）', count: '18', teacher: '冯英歌', location: '体育馆' },
+        { campus: '拱宸桥', time: '周四10.11', className: '田径', count: '待定', teacher: '熊善虎', location: '田径场' },
+        { campus: '拱宸桥', time: '周四10.11', className: '定向提高班', count: '25', teacher: '徐虹', location: '校园' },
+        { campus: '拱宸桥', time: '周四10.11', className: '武术', count: '20', teacher: '李丹丹', location: '体育馆103' },
+        { campus: '拱宸桥', time: '周四10.11', className: '排球提高班训练', count: '40', teacher: '蔡勇', location: '体育馆' },
+        { campus: '拱宸桥', time: '周六7.8', className: '网球', count: '15', teacher: '王盛', location: '网球场' },
+        { campus: '拱宸桥', time: '周六全天', className: '定向', count: '20', teacher: '徐虹', location: '杭州及周边野外和公园' },
+        { campus: '拱宸桥', time: '周六10.11', className: '游泳队', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
+        { campus: '拱宸桥', time: '周日8.9', className: '跆拳道提高班', count: '待定', teacher: '徐彬', location: '商职' },
+        { campus: '拱宸桥', time: '周日7.8', className: '女篮队（两校区合练）', count: '18', teacher: '冯英歌', location: '体育馆' },
+        { campus: '拱宸桥', time: '周日8.9', className: '男女足', count: '50', teacher: '邢琦', location: '体育场' },
+        { campus: '拱宸桥', time: '周日10.11', className: '男篮', count: '待定', teacher: '石一童', location: '体育馆' },
+        { campus: '拱宸桥', time: '周日10.11', className: '校话剧队', count: '35', teacher: '陈庆芳', location: '杭州树人礼堂' },
+        { campus: '拱宸桥', time: '周日10.11', className: '游泳队', count: '20', teacher: '于玥浛、邵明虎、何佳俪', location: '游泳馆' },
+        { campus: '拱宸桥', time: '周日10.11', className: '健美操', count: '24', teacher: '吴姝娴', location: '形体房' }
+    ].map(record => ({ ...record, id: createId() })); // 为每条记录添加唯一id
+
+    // ---------- 本地存储操作 ----------
+    const STORAGE_KEY = 'training_schedule';
+
+    function loadFromStorage() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                // 确保每个对象都有id（旧数据可能没有）
+                return parsed.map(item => ({
+                    ...item,
+                    id: item.id || createId()
+                }));
+            } catch (e) {
+                console.warn('解析存储数据失败，使用初始数据', e);
+                return rawInitialRecords.map(r => ({ ...r })); // 复制一份
+            }
+        }
+        // 无存储数据，返回初始示例
+        return rawInitialRecords.map(r => ({ ...r })); // 复制一份
+    }
+
+    function saveToStorage(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
 
     // 全局记录数组
-    let records = initialRecords.map(r => ({ ...r, id: r.id || createId() })); // 保证都有id
+    let records = loadFromStorage(); // 从本地存储加载，若无则使用初始数据
 
     // DOM 元素
     const tbody = document.getElementById('tableBody');
@@ -382,6 +427,7 @@
     const addBtn = document.getElementById('addBtn');
     const clearFormBtn = document.getElementById('clearFormBtn');
     const exportBtn = document.getElementById('exportExcelBtn');
+    const resetBtn = document.getElementById('resetBtn'); // 新增重置按钮
 
     // 渲染表格
     function renderTable() {
@@ -405,6 +451,7 @@
             btn.addEventListener('click', (e) => {
                 const id = e.target.getAttribute('data-id');
                 records = records.filter(r => r.id !== id);
+                saveToStorage(records); // 保存到本地存储
                 renderTable();
             });
         });
@@ -455,8 +502,22 @@
             location
         };
         records.push(newRecord);
+        saveToStorage(records); // 保存到本地存储
         renderTable();
-        clearForm();      // 可选：添加后清空
+        clearForm(); // 添加后清空表单
+    }
+
+    // 重置为示例数据
+    function resetToSample() {
+        if (confirm('重置将丢失当前所有未保存的数据，确定吗？')) {
+            // 重新从原始数据生成，并赋予新的id
+            records = rawInitialRecords.map(record => ({
+                ...record,
+                id: createId()
+            }));
+            saveToStorage(records);
+            renderTable();
+        }
     }
 
     // 导出为CSV (兼容Excel)
@@ -510,6 +571,7 @@
     addBtn.addEventListener('click', addRecord);
     clearFormBtn.addEventListener('click', clearForm);
     exportBtn.addEventListener('click', exportToExcel);
+    resetBtn.addEventListener('click', resetToSample);
 
     // 可选的回车快速添加 (监听表单)
     [timeInput, classInput, teacherInput, countInput, locationInput].forEach(input => {
